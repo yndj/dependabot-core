@@ -2,6 +2,7 @@ const path = require("path");
 const os = require("os");
 const fs = require("fs");
 const nock = require("nock");
+const rimraf = require("rimraf");
 const {
   updateDependencyFiles,
   updateVersionPattern
@@ -20,20 +21,20 @@ describe("updater", () => {
 
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
-  afterEach(() => fs.rmdirSync(tempDir));
+  afterEach(() => rimraf.sync(tempDir));
 
   async function copyDependencies(sourceDir, destDir) {
     const srcPackageJson = path.join(
       __dirname,
       `fixtures/updater/${sourceDir}/package.json`
     );
-    await fs.copyFile(srcPackageJson, `${destDir}/package.json`);
+    fs.copyFileSync(srcPackageJson, `${destDir}/package.json`);
 
     const srcYarnLock = path.join(
       __dirname,
       `fixtures/updater/${sourceDir}/yarn.lock`
     );
-    await fs.copyFile(srcYarnLock, `${destDir}/yarn.lock`);
+    fs.copyFileSync(srcYarnLock, `${destDir}/yarn.lock`);
   }
 
   it("generates an updated yarn.lock", async () => {
