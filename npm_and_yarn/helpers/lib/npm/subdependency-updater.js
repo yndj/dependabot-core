@@ -5,6 +5,7 @@ const npm = require("npm");
 const installer = require("npm/lib/install");
 
 const { muteStderr, runAsync } = require("./helpers.js");
+const dedupe = require("./fix-duplicates.js");
 
 // Installs exact version and returns lockfile entry
 async function getLockfileEntryForUpdate(depName, depVersion) {
@@ -36,6 +37,7 @@ async function getLockfileEntryForUpdate(depName, depVersion) {
   return depEntry;
 }
 
+// TODO: Support not finding a previous version
 function replaceLockfileEntry(lockfile, depName, previousVersion, entry) {
   if (!lockfile.dependencies) return lockfile;
   const dependencies = Object.keys(lockfile.dependencies).reduce(
@@ -104,12 +106,24 @@ async function updateDependencyFile(
       previousVersion,
       lockfileEntryForUpdate
     );
-    // TODO: Deduplicate
 
     fs.writeFileSync(
       path.join(directory, lockfileName),
-      JSON.stringify(mergedLockfile)
+      JSON.stringify(mergedLockfile, null, 2)
     );
+
+    // const dryRun = true;
+    // const deduper = new dedupe.Deduper(directory, dryRun, {
+    //   packageLockOnly: true
+    // });
+    // deduper.printInstalled = cb => cb();
+
+    // const unmute = muteStderr();
+    // try {
+    //   await runAsync(deduper, deduper.run, []);
+    // } finally {
+    //   unmute();
+    // }
   }
 
   const dryRun = true;
@@ -117,22 +131,14 @@ async function updateDependencyFile(
     packageLockOnly: true
   });
 
-  // A bug in npm means the initial install will remove any git dependencies
-  // from the lockfile. A subsequent install with no arguments fixes this.
-  const cleanupInstaller = new installer.Installer(directory, dryRun, [], {
-    packageLockOnly: true
-  });
-
   // Skip printing the success message
   initialInstaller.printInstalled = cb => cb();
-  cleanupInstaller.printInstalled = cb => cb();
 
   // There are some hard-to-prevent bits of output.
   // This is horrible, but works.
   const unmute = muteStderr();
   try {
-    await runAsync(initialInstaller, initialInstaller.run, []);
-    await runAsync(cleanupInstaller, cleanupInstaller.run, []);
+    // await runAsync(initialInstaller, initialInstaller.run, []);
   } finally {
     unmute();
   }

@@ -1268,8 +1268,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(package3_yarn_lock.content).
             to include("extend@~2.0.0:\n  version \"2.0.1\"")
 
-          # TODO: Change this to 2.0.1 once npm supports updating to specific
-          # sub dependency versions
           expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
             to eq("2.0.1")
         end
@@ -1297,8 +1295,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             to match_array(
               [
                 "packages/package1/package-lock.json",
-                "packages/package3/yarn.lock",
-                "packages/package4/package-lock.json"
+                "packages/package3/yarn.lock"
               ]
             )
 
@@ -1308,19 +1305,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           package3_yarn_lock =
             updated_files.find { |f| f.name == "packages/package3/yarn.lock" }
           parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
-          package4_npm_lock =
-            updated_files.
-            find { |f| f.name == "packages/package4/package-lock.json" }
-          parsed_package4_npm_lock = JSON.parse(package4_npm_lock.content)
 
           expect(package3_yarn_lock.content).
             to include("extend@~2.0.0:\n  version \"2.0.2\"")
 
           expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
             to eq("2.0.2")
-
-          expect(parsed_package4_npm_lock["dependencies"]["extend"]["version"]).
-            to eq("1.3.0")
         end
       end
     end
@@ -2243,7 +2233,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         let(:dependency_name) { "acorn" }
         let(:version) { "5.7.3" }
-        let(:previous_version) { "5.1.1" }
+        let(:previous_version) { "5.2.1" }
         let(:requirements) { [] }
         let(:previous_requirements) { [] }
 
