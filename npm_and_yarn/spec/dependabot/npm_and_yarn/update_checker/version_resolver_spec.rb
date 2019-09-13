@@ -314,7 +314,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     context "with no lockfile" do
       let(:dependency_files) { [package_json] }
 
-      context "updating a tightly coupled monorepo dep" do
+      context "updating a tightly coupled monorepo dep (vue)" do
         let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -813,7 +813,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   describe "#dependency_updates_from_full_unlock" do
     subject { resolver.dependency_updates_from_full_unlock }
 
-    context "updating a tightly coupled monorepo dep" do
+    context "updating a tightly coupled monorepo dep (vue)" do
       let(:dependency_files) { [package_json] }
       let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
       let(:dependency) do
@@ -888,6 +888,28 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               }]
             )
         end
+      end
+    end
+
+    context "updating a tightly coupled monorepo dep (angular-cli)" do
+      let(:latest_allowable_version) { Gem::Version.new("8.3.4") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "angular-cli",
+          version: nil,
+          requirements: [{
+            file: "package.json",
+            requirement: "8.3.4",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      context "with other parts of the monorepo present" do
+        let(:manifest_fixture_name) { "monorepo_angular_cli_multiple.json" }
+        it { is_expected.to eq(latest_allowable_version) }
       end
     end
 

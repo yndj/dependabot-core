@@ -1,0 +1,16 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@angular-devkit/architect": "0.803.3",
+    "@angular-devkit/core": "8.3.3",
+    "@angular/cli": "8.3.3"
+  }
+}

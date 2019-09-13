@@ -20,8 +20,85 @@ module Dependabot
         require_relative "latest_version_finder"
 
         TIGHTLY_COUPLED_MONOREPOS = {
-          "vue" => %w(vue vue-template-compiler)
+          "vue" => %w(vue vue-template-compiler),
+          "angular": %w(
+            "@angular/core"
+            "@angular/router"
+            "@angular/common"
+            "@angular/compiler"
+            "@angular/platform-server"
+            "@angular/upgrade"
+            "@angular/forms"
+            "@angular/platform-browser"
+            "@angular/service-worker"
+            "@angular/http"
+            "@angular/platform-browser-dynamic"
+            "@angular/animations"
+            "@angular/elements"
+            "@angular/platform-webworker"
+            "@angular/platform-webworker-dynamic"
+            "@angular/bazel"
+            "@angular/language-service"
+          ),
+          "angular2" => %w(
+            "@angular/material"
+            "@angular/cdk"
+            "@angular/material-experimental"
+            "@angular/cdk-experimental"
+            "@angular/material-moment-adapter"
+          ),
+          "angular1" => %w(
+            "angular"
+            "angular-animate"
+            "angular-aria"
+            "angular-cookies"
+            "angular-i18n"
+            "angular-loader"
+            "angular-mocks"
+            "angular-parse-ext"
+            "angular-route"
+            "angular-resource"
+            "angular-sanitize"
+            "angular-scenario"
+            "angular-touch"
+            "angular-messages"
+            "angular-messages-format"
+          ),
+          "angular-cli" => %w(
+            @angular/cli
+            @angular-devkit/architect
+            @angular-devkit/architect-cli
+            @angular-devkit/core
+            @angular-devkit/schematics
+            @angular-devkit/schematics-cli
+            @angular-devkit/build-angular
+            @angular-devkit/build-webpack
+            @angular-devkit/build-optimizer
+            @angular-devkit/build-ng-packagr
+            @angular/pwa
+            @schematics/angular
+            @schematics/schematics
+            @schematics/update
+            @ngtools/webpack
+          )
         }.freeze
+
+        # angular-cli monorepo packages are locked to each other but have
+        # different versioning schemes, some use semver 8.2.3 for example and
+        # others 0.802.3 for the same version
+        ANGULAR_CLI_VERSION_REGEX =
+          /\d\.(?<major>\d)(?<minor>\d+)\.(?<patch>\d+)/.freeze
+
+        MONOREPO_VERSION_COMPARES = {
+          "angular-cli" => ->(ver) do
+            return ver.to_s unless captures = ver.to_s.match(ANGULAR_CLI_VERSION_REGEX)
+
+            major = captures.named_captures["major"]
+            minor = captures.named_captures["minor"]
+            patch = captures.named_captures["patch"]
+            "#{major}.#{minor.sub!(/^0+/, '')}.#{patch}"
+          end
+        }
 
         # Error message from yarn add:
         # " > @reach/router@1.2.1" has incorrect \
@@ -129,24 +206,26 @@ module Dependabot
         end
 
         def updated_monorepo_dependencies
-          monorepo_dep_names =
-            TIGHTLY_COUPLED_MONOREPOS.values.
-            find { |deps| deps.include?(dependency.name) }
+          monorepo_dep_group, monorepo_dep_names = TIGHTLY_COUPLED_MONOREPOS.
+            find { |key, deps| deps.include?(dependency.name) }
 
           deps_to_update =
             top_level_dependencies.
             select { |d| monorepo_dep_names.include?(d.name) }
 
+          monorepo_version_compare = MONOREPO_VERSION_COMPARES[monorepo_dep_group]
+          normalize_version = monorepo_version_compare || ->(v) { v }
+
           updates = []
           deps_to_update.each do |dep|
             next if git_dependency?(dep)
-            next if dep.version &&
-                    version_class.new(dep.version) >= latest_allowable_version
+            dep_version = dep.version && version_class.new(normalize_version.call(dep.version))
+            next if dep_version >= version_class.new(normalize_version.call(latest_allowable_version))
 
-            updated_version =
-              latest_version_finder(dep).
-              possible_versions.
-              find { |v| v == latest_allowable_version }
+            updated_version = latest_version_finder(dep).possible_versions.find do |v|
+              normalize_version.call(v) == normalize_version.call(latest_allowable_version)
+            end
+
             next unless updated_version
 
             updates << { dependency: dep, version: updated_version }
