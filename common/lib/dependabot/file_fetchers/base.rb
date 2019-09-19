@@ -8,6 +8,7 @@ require "dependabot/clients/codecommit"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/clients/gitlab_with_retries"
+require "dependabot/clients/git"
 require "dependabot/shared_helpers"
 
 # rubocop:disable Metrics/ClassLength
@@ -21,7 +22,8 @@ module Dependabot
         Gitlab::Error::NotFound,
         Dependabot::Clients::Azure::NotFound,
         Dependabot::Clients::Bitbucket::NotFound,
-        Dependabot::Clients::CodeCommit::NotFound
+        Dependabot::Clients::CodeCommit::NotFound,
+        Dependabot::Clients::Git::NotFound
       ].freeze
 
       def self.required_files_in?(_filename_array)
@@ -159,6 +161,8 @@ module Dependabot
           _bitbucket_repo_contents(repo, path, commit)
         when "codecommit"
           _codecommit_repo_contents(repo, path, commit)
+        when "git"
+          _git_repo_contents(repo, path, commit)
         else raise "Unsupported provider '#{provider}'."
         end
       end
@@ -286,6 +290,23 @@ module Dependabot
         end
       end
 
+      def _git_repo_contents(repo, path, commit)
+        response = git_client.fetch_repo_contents(
+          repo,
+          commit,
+          path
+        )
+
+        response.map do |file|
+          OpenStruct.new(
+            name: file.name,
+            path: file.path,
+            type: file.type,
+            size: file.size
+          )
+        end
+      end
+
       def _full_specification_for(path, fetch_submodules:)
         if fetch_submodules && _linked_dir_for(path)
           linked_dir_details = @linked_paths[_linked_dir_for(path)]
@@ -344,6 +365,8 @@ module Dependabot
           bitbucket_client.fetch_file_contents(repo, commit, path)
         when "codecommit"
           codecommit_client.fetch_file_contents(repo, commit, path)
+        when "git"
+          git_client.fetch_file_contents(repo, commit, path)
         else raise "Unsupported provider '#{source.provider}'."
         end
       end
@@ -426,6 +449,7 @@ module Dependabot
         when "azure" then azure_client
         when "bitbucket" then bitbucket_client
         when "codecommit" then codecommit_client
+        when "git" then git_client
         else raise "Unsupported provider '#{source.provider}'."
         end
       end
@@ -464,6 +488,11 @@ module Dependabot
         @codecommit_client ||=
           Dependabot::Clients::CodeCommit.
           for_source(source: source, credentials: credentials)
+      end
+
+      def git_client
+        @git_client ||=
+          Dependabot::Clients::Git.for_source(source: source)
       end
     end
   end

@@ -54,7 +54,8 @@ module Dependabot
 
     def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,
                    hostname: nil, api_endpoint: nil)
-      if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
+      if (hostname.nil? ^ api_endpoint.nil?) &&
+         !["codecommit", "git"].include?(provider)
         msg = "Both hostname and api_endpoint must be specified if either "\
               "are. Alternatively, both may be left blank to use the "\
               "provider's defaults."
@@ -91,6 +92,8 @@ module Dependabot
         url + "?path=#{directory}"
       when "codecommit"
         raise "The codecommit provider does not utilize URLs"
+      when "git"
+        raise "The git provider does not utilize URLs"
       else raise "Unexpected repo provider '#{provider}'"
       end
     end
@@ -122,6 +125,7 @@ module Dependabot
       when "gitlab" then "gitlab.com"
       when "azure" then "dev.azure.com"
       when "codecommit" then "us-east-1"
+      when "git" then nil
       else raise "Unexpected provider '#{provider}'"
       end
     end
@@ -133,6 +137,7 @@ module Dependabot
       when "gitlab" then "https://gitlab.com/api/v4"
       when "azure" then "https://dev.azure.com/"
       when "codecommit" then nil
+      when "git" then nil
       else raise "Unexpected provider '#{provider}'"
       end
     end

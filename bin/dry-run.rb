@@ -96,7 +96,8 @@ $options = {
   write: false,
   lockfile_only: false,
   requirements_update_strategy: nil,
-  commit: nil
+  commit: nil,
+  provider: "github"
 }
 
 if ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
@@ -150,6 +151,10 @@ option_parse = OptionParser.new do |opts|
 
   opts.on("--commit COMMIT", "Commit to fetch dependency files from") do |value|
     $options[:commit] = value
+  end
+
+  opts.on("--provider PROVIDER", "Set a git source provider") do |value|
+    $options[:provider] = value
   end
 end
 
@@ -264,10 +269,16 @@ def cached_dependency_files_read
   end
 end
 
+repo = if $options[:provider] == "git"
+  File.join("dry-run", $repo_name.split("/"))
+else
+  $repo_name
+end
+
 source = Dependabot::Source.new(
-  provider: "github",
-  repo: $repo_name,
-  directory: $options[:directory],
+  provider: $options[:provider],
+  repo: repo,
+  directory: $options[:branch],
   branch: $options[:branch],
   commit: $options[:commit]
 )

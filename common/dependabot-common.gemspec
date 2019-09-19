@@ -34,6 +34,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "parseconfig", "~> 1.0"
   spec.add_dependency "parser", "~> 2.5"
   spec.add_dependency "toml-rb", "~> 1.1", ">= 1.1.2"
+  spec.add_dependency "rugged", "~> 0.28.3.1"
 
   spec.add_development_dependency "byebug", "~> 11.0"
   spec.add_development_dependency "rake", "~> 12"
