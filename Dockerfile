@@ -106,6 +106,8 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
     && curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer
 
+# Echo PHP version
+RUN php -v
 
 ### GO
 
@@ -158,5 +160,5 @@ RUN bash /opt/terraform/helpers/build /opt/terraform && \
     bash /opt/dep/helpers/build /opt/dep && \
     bash /opt/go_modules/helpers/build /opt/go_modules && \
     bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
-    bash /opt/hex/helpers/build /opt/hex && \
-    bash /opt/composer/helpers/build /opt/composer
+    bash /opt/hex/helpers/build /opt/hex
+    # bash /opt/composer/helpers/build /opt/composer
